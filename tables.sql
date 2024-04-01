@@ -1,25 +1,13 @@
 use master;
 -------------------------------Creation de la base de donnees-------------------------------
 IF EXISTS (SELECT name FROM master..sysdatabases WHERE name = 'ASG_24')
-    DROP DATABASE ASG_24;
-
-CREATE DATABASE ASG_24;
-
+       DROP DATABASE ASG_24;
+    CREATE DATABASE ASG_24;
+go
 USE ASG_24;
--------------------------------Creation des tables-------------------------------
-CREATE TABLE Joueur (
-    JoueurID SMALLINT,
-    EquipeID TINYINT NOT NULL,
-    TuteurID SMALLINT NOT NULL,
-    Nom VARCHAR(50) NOT NULL,
-    Prenom VARCHAR(50) NOT NULL,
-    DateDeNaissance DATE NOT NULL,
-    Position VARCHAR(50),
-    CONSTRAINT pk_joueur PRIMARY KEY(JoueurID),
-    CONSTRAINT fk_joueur_equipe FOREIGN KEY (EquipeID) REFERENCES Equipe(EquipeID),
-    CONSTRAINT fk_joueur_tuteur FOREIGN KEY (TuteurID) REFERENCES Tuteur(TuteurID)
-);
+go
 
+-------------------------------Creation des tables-------------------------------
 CREATE TABLE Tuteur (
     TuteurID SMALLINT,
     Nom VARCHAR(50) NOT NULL,
@@ -40,27 +28,9 @@ CREATE TABLE Entraineur (
     Telephone CHAR(20) NOT NULL, -- Numero de telephone fixe
     NAS CHAR(11) UNIQUE NOT NULL, -- Numero d'assurance sociale fixe
     CONSTRAINT pk_entraineur PRIMARY KEY(EntraineurID),
-    CONSTRAINT fk_entraineur_equipe FOREIGN KEY (EquipeID) REFERENCES Equipe(EquipeID),
+    --CONSTRAINT fk_entraineur_equipe FOREIGN KEY (EquipeID) REFERENCES Equipe(EquipeID),
     CONSTRAINT ck_entraineur_nas CHECK(NAS LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]'), -- Format du NAS
     CONSTRAINT ck_entraineur_telephone CHECK(Telephone LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]') -- Format du telephone
-);
-
-CREATE TABLE Equipe (
-    EquipeID TINYINT,
-    EntraineurID TINYINT NOT NULL,
-    LigueID SMALLINT NOT NULL,
-    Nom VARCHAR(50) NOT NULL,
-    Classement TINYINT UNIQUE NOT NULL,
-    CONSTRAINT pk_equipe PRIMARY KEY(EquipeID),
-    CONSTRAINT fk_equipe_entraineur FOREIGN KEY (EntraineurID) REFERENCES Entraineur(EntraineurID),
-    CONSTRAINT fk_equipe_ligue FOREIGN KEY (LigueID) REFERENCES Ligue(LigueID)
-);
-
-CREATE TABLE Terrain (
-    TerrainID TINYINT,
-    Type VARCHAR(50) NOT NULL,
-    Adresse VARCHAR(100) NOT NULL,
-    CONSTRAINT pk_terrain PRIMARY KEY(TerrainID)
 );
 
 CREATE TABLE Programme (
@@ -75,6 +45,57 @@ CREATE TABLE Programme (
     CONSTRAINT ck_age CHECK (AgeMin <= AgeMax), -- AgeMin doit etre inferieur ou egal a AgeMax
     CONSTRAINT ck_saison CHECK(Saison IN ('Hiver', 'Ete', 'Automne', 'Printemps')), -- Saison doit etre un des 4 choix possibles
     CONSTRAINT ck_niveau CHECK(Niveau IN ('Local', 'Competitif')) -- Niveau doit etre un des 2 choix possibles
+);
+
+CREATE TABLE Ligue (
+    LigueID SMALLINT,
+    ProgrammeID TINYINT NOT NULL,
+    NomLigue VARCHAR(50) NOT NULL,
+    Description VARCHAR(255),
+    CONSTRAINT pk_ligue PRIMARY KEY(LigueID),
+    CONSTRAINT fk_ligue_programme FOREIGN KEY (ProgrammeID) REFERENCES Programme(ProgrammeID)
+);
+
+CREATE TABLE Terrain (
+    TerrainID TINYINT,
+    Type VARCHAR(50) NOT NULL,
+    Adresse VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_terrain PRIMARY KEY(TerrainID)
+);
+
+CREATE TABLE Arbitre (
+    ArbitreID TINYINT,
+    Nom VARCHAR(50) NOT NULL,
+    Prenom VARCHAR(50) NOT NULL,
+    Telephone VARCHAR(20) NOT NULL,
+    NAS CHAR(11) UNIQUE NOT NULL, -- Numero d'assurance sociale fixe
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    CONSTRAINT pk_arbitre PRIMARY KEY(ArbitreID),
+    CONSTRAINT ck_arbitre_nas CHECK(NAS LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]') -- Format du NAS
+);
+
+CREATE TABLE Equipe (
+    EquipeID TINYINT,
+    EntraineurID TINYINT NOT NULL,
+    LigueID SMALLINT NOT NULL,
+    Nom VARCHAR(50) NOT NULL,
+    Classement TINYINT UNIQUE NOT NULL,
+    CONSTRAINT pk_equipe PRIMARY KEY(EquipeID),
+    CONSTRAINT fk_equipe_entraineur FOREIGN KEY (EntraineurID) REFERENCES Entraineur(EntraineurID),
+    CONSTRAINT fk_equipe_ligue FOREIGN KEY (LigueID) REFERENCES Ligue(LigueID)
+);
+
+CREATE TABLE Joueur (
+    JoueurID SMALLINT,
+    EquipeID TINYINT NOT NULL,
+    TuteurID SMALLINT NOT NULL,
+    Nom VARCHAR(50) NOT NULL,
+    Prenom VARCHAR(50) NOT NULL,
+    DateDeNaissance DATE NOT NULL,
+    Position VARCHAR(50),
+    CONSTRAINT pk_joueur PRIMARY KEY(JoueurID),
+    CONSTRAINT fk_joueur_equipe FOREIGN KEY (EquipeID) REFERENCES Equipe(EquipeID),
+    CONSTRAINT fk_joueur_tuteur FOREIGN KEY (TuteurID) REFERENCES Tuteur(TuteurID)
 );
 
 CREATE TABLE Match (
@@ -99,17 +120,6 @@ CREATE TABLE Match (
 
 );
 
-CREATE TABLE Arbitre (
-    ArbitreID TINYINT,
-    Nom VARCHAR(50) NOT NULL,
-    Prenom VARCHAR(50) NOT NULL,
-    Telephone VARCHAR(20) NOT NULL,
-    NAS CHAR(11) UNIQUE NOT NULL, -- Numero d'assurance sociale fixe
-    Email VARCHAR(100) UNIQUE NOT NULL,
-    CONSTRAINT pk_arbitre PRIMARY KEY(ArbitreID),
-    CONSTRAINT ck_arbitre_nas CHECK(NAS LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]') -- Format du NAS
-);
-
 CREATE TABLE Pratique (
     PratiqueID INT,
     EquipeID TINYINT NOT NULL,
@@ -123,6 +133,7 @@ CREATE TABLE Pratique (
     CONSTRAINT ck_pratique_temps CHECK(IF Statut = 'Planifie' THEN TempsDebut > NOW() ELSE IF Statut = 'EnCours' THEN TempsDebut <= NOW() ELSE TRUE) -- TempsDebut doit etre dans le futur si la pratique est planifiee, dans le passe si la pratique est en cours, et n'importe quand si la pratique est terminee ou annulee
 );
 
+
 CREATE TABLE But (
     ButID INT,
     ButJoueurID SMALLINT NOT NULL,
@@ -133,15 +144,6 @@ CREATE TABLE But (
     CONSTRAINT fk_but_butjoueur FOREIGN KEY (ButJoueurID) REFERENCES Joueur(JoueurID),
     CONSTRAINT fk_but_assistjoueur FOREIGN KEY (AssistJoueurID) REFERENCES Joueur(JoueurID),
     CONSTRAINT fk_but_match FOREIGN KEY (MatchID) REFERENCES Match(MatchID)
-);
-
-CREATE TABLE Ligue (
-    LigueID SMALLINT,
-    ProgrammeID SMALLINT NOT NULL,
-    NomLigue VARCHAR(50) NOT NULL,
-    Description VARCHAR(255),
-    CONSTRAINT pk_ligue PRIMARY KEY(LigueID),
-    CONSTRAINT fk_ligue_programme FOREIGN KEY (ProgrammeID) REFERENCES Programme(ProgrammeID)
 );
 
 ---------------------------------------------------------Creation des index---------------------------------------------------------
