@@ -6,7 +6,7 @@ IF EXISTS (SELECT name FROM master..sysdatabases WHERE name = 'ASG_24')
 go
 USE ASG_24;
 go
-
+--test
 -------------------------------Creation des tables-------------------------------
 CREATE TABLE Tuteur (
     TuteurID SMALLINT,
